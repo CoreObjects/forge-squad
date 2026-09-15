@@ -1,9 +1,9 @@
-import { simulatePve } from '../../core/battle';
 import { Game } from '../../core/game';
+import { p0Boss, p0Chain, runP0 } from '../../core/p0';
 import { hashSeed } from '../../core/rng';
 import { stageInfo, totalStages } from '../../core/stages';
 import { DAY, HOUR } from '../../core/time';
-import { RUNE_TYPES, type EnemyDef, type Rune, type RuneType } from '../../core/types';
+import { RUNE_TYPES, type RuneType } from '../../core/types';
 import type { App, Scene } from '../app';
 import { C, QUALITY_COLOR, RUNE_COLOR, W } from '../theme';
 import type { Ui } from '../ui';
@@ -94,8 +94,8 @@ export class GmScene implements Scene {
     btn('t1d', '推进1天', () => g.gm.advanceTime(DAY));
 
     row('P0 战斗验证（P0_BALANCE.md 基线）');
-    btn('p0a', '无针对链', () => this.p0(app, ['feng', 'feng', 'ji', 'feng', 'yu', 'feng']));
-    btn('p0b', '震→锋 链', () => this.p0(app, ['zhen', 'feng', 'ji', 'feng', 'yu', 'feng']));
+    btn('p0a', '无针对链', () => this.p0(app, cfg.battle.p0.plainChain));
+    btn('p0b', '震→锋 链', () => this.p0(app, cfg.battle.p0.tunedChain));
     btn('reset', '重置账号', async () => {
       const ok = await app.confirm('重置账号', '清空全部进度，从新手开始。', '重置', '取消');
       if (!ok) return;
@@ -109,14 +109,13 @@ export class GmScene implements Scene {
 
   private p0(app: App, types: RuneType[]): void {
     const cfg = app.game.cfg;
-    const chain: (Rune | null)[] = types.map((t, i) => ({ id: `p0-${i}`, type: t, quality: 0, furnaceLevel: 1, strength: 0 }));
-    const enemy: EnemyDef = { name: '重甲守卫', hp: 1500, atk: 150, def: 0, speed: 0, actEvery: 2, weakness: ['zhen', 'feng'], isBoss: true };
-    const result = simulatePve(cfg, { name: 'P0', atk: 100, hp: 1000, def: 0, speed: 100, chain }, enemy, hashSeed('p0', Date.now()));
+    const enemy = p0Boss(cfg);
+    const result = runP0(cfg, types, hashSeed('p0', Date.now()));
     const info = { ...stageInfo(cfg, 10), label: 'P0', name: enemy.name, weakness: enemy.weakness };
     app.push(
       new BattleScene({
         kind: 'daily',
-        battle: { info, enemy, result, hints: [], rewards: { hammers: 0, gold: 0 }, playerChain: chain, playerMaxHp: 1000 },
+        battle: { info, enemy, result, hints: [], rewards: { hammers: 0, gold: 0 }, playerChain: p0Chain(types), playerMaxHp: cfg.battle.p0.player.hp },
       }),
     );
   }

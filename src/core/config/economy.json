@@ -1,10 +1,5 @@
 {
-  "idle": {
-    "hammerIntervalMinutes": 40,
-    "freeCapHours": 12,
-    "goldPerHourBase": 120,
-    "goldPerHourPerStage": 5
-  },
+  "idle": { "hammerIntervalMinutes": 40, "freeCapHours": 12, "goldPerHourBase": 120, "goldPerHourPerStage": 5 },
   "daily": {
     "resetHour": 0,
     "tasks": [
@@ -19,8 +14,16 @@
       "name": "每日试炼魔像",
       "hammers": 4,
       "gold": 500,
-      "powerFactor": 1.0,
-      "weaknessRotation": [["zhen", "feng"], ["yu", "feng"], ["ji", "feng"], ["feng", "feng"], ["ji", "zhen"], ["yu", "yu"], ["ji", "feng", "feng"]]
+      "powerFactor": 1,
+      "weaknessRotation": [
+        ["zhen", "feng"],
+        ["yu", "feng"],
+        ["ji", "feng"],
+        ["feng", "feng"],
+        ["ji", "zhen"],
+        ["yu", "yu"],
+        ["ji", "feng", "feng"]
+      ]
     }
   },
   "arena": {
@@ -30,16 +33,10 @@
     "loseScore": -5,
     "rewardHammers": 1,
     "rewardGold": 150,
-    "opponentPowerRatio": { "weak": 0.85, "close": 1.0, "strong": 1.12 },
+    "opponentPowerRatio": { "weak": 0.85, "close": 1, "strong": 1.12 },
     "botCount": 40,
     "botDailyGrowth": 1.1,
     "botLabel": "系统测试数据"
   },
-  "recommend": {
-    "powerWeight": 1,
-    "comboWeight": 3,
-    "weaknessWeight": 6,
-    "effectivePowerPct": 2,
-    "strongScore": 4
-  }
+  "recommend": { "powerWeight": 1, "comboWeight": 3, "weaknessWeight": 6, "effectivePowerPct": 2, "strongScore": 4, "battleWeight": 10, "battleSeeds": 4 }
 }

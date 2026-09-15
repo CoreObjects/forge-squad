@@ -4,36 +4,104 @@
   "chapterNames": ["灰烬矿道", "铁锈荒原", "雾隐林地", "熔岩裂谷", "寒霜要塞", "风暴高崖", "腐沼遗迹", "星陨废墟", "龙骨峡谷", "终焉锻城"],
   "normalEnemyNames": ["矿坑史莱姆", "骷髅矿工", "蛀甲虫", "锈刃强盗", "荒原豺狼", "雾林蘑菇怪", "熔岩小鬼", "冰霜狼", "风暴鹰身人", "沼泽蛙人", "星尘傀儡", "龙骨卫兵"],
   "chapterBosses": [
-    { "name": "重甲守卫", "weakness": ["zhen", "feng"], "tendency": "先打断防御，再攻击" },
-    { "name": "狂风刺客", "weakness": ["yu", "feng"], "tendency": "扛住第一波，再反打" },
-    { "name": "巨型魔像", "weakness": ["ji", "feng", "feng"], "tendency": "用连续爆发快速打穿" },
-    { "name": "熔核巨兽", "weakness": ["ji", "zhen"], "tendency": "抢先控制，别让它蓄力" },
-    { "name": "霜甲统领", "weakness": ["feng", "feng"], "tendency": "连续攻击压碎冰甲" },
-    { "name": "雷羽女王", "weakness": ["yu", "yu"], "tendency": "稳住阵脚，等她力竭" },
-    { "name": "腐沼领主", "weakness": ["zhen", "feng", "feng"], "tendency": "控住之后连续输出" },
-    { "name": "星陨骑士", "weakness": ["yu", "yu", "feng"], "tendency": "层层防守后爆发反击" },
-    { "name": "龙骨暴君", "weakness": ["ji", "zhen", "feng"], "tendency": "先手控制再重击" },
-    { "name": "终焉铸魂者", "weakness": ["yu", "feng", "feng"], "tendency": "扛住后连续反攻" }
+    {
+      "name": "重甲守卫",
+      "weakness": ["zhen", "feng"],
+      "tendency": "先打断防御，再攻击"
+    },
+    {
+      "name": "狂风刺客",
+      "weakness": ["yu", "feng"],
+      "tendency": "扛住第一波，再反打"
+    },
+    {
+      "name": "巨型魔像",
+      "weakness": ["ji", "feng", "feng"],
+      "tendency": "用连续爆发快速打穿"
+    },
+    {
+      "name": "熔核巨兽",
+      "weakness": ["ji", "zhen"],
+      "tendency": "抢先控制，别让它蓄力"
+    },
+    {
+      "name": "霜甲统领",
+      "weakness": ["feng", "feng"],
+      "tendency": "连续攻击压碎冰甲"
+    },
+    {
+      "name": "雷羽女王",
+      "weakness": ["yu", "yu"],
+      "tendency": "稳住阵脚，等她力竭"
+    },
+    {
+      "name": "腐沼领主",
+      "weakness": ["zhen", "feng", "feng"],
+      "tendency": "控住之后连续输出"
+    },
+    {
+      "name": "星陨骑士",
+      "weakness": ["yu", "yu", "feng"],
+      "tendency": "层层防守后爆发反击"
+    },
+    {
+      "name": "龙骨暴君",
+      "weakness": ["ji", "zhen", "feng"],
+      "tendency": "先手控制再重击"
+    },
+    {
+      "name": "终焉铸魂者",
+      "weakness": ["yu", "feng", "feng"],
+      "tendency": "扛住后连续反攻"
+    }
   ],
   "specialStages": [
-    { "stage": 3, "kind": "tutorialBoss", "name": "矿洞看守", "weakness": ["ji", "feng"] },
-    { "stage": 6, "kind": "miniBoss", "name": "裂甲蜘蛛", "weakness": ["ji", "feng"], "factor": 1.08 },
-    { "stage": 15, "kind": "miniBoss", "name": "荒原首领", "weakness": ["feng", "feng"], "factor": 1.2 }
+    {
+      "stage": 3,
+      "kind": "tutorialBoss",
+      "name": "矿洞看守",
+      "weakness": ["ji", "feng"]
+    },
+    {
+      "stage": 6,
+      "kind": "miniBoss",
+      "name": "裂甲蜘蛛",
+      "weakness": ["ji", "feng"],
+      "factor": 1.0
+    },
+    {
+      "stage": 15,
+      "kind": "miniBoss",
+      "name": "荒原首领",
+      "weakness": ["feng", "feng"],
+      "factor": 1.2
+    }
   ],
   "tutorialBossWeaknessCandidates": [["ji", "feng"], ["zhen", "feng"], ["yu", "feng"], ["feng", "feng"], ["ji", "zhen"], ["yu", "yu"]],
   "powerCurve": [
-    [0, 100], [2, 150], [5, 190], [10, 250], [15, 320], [20, 560], [30, 760], [40, 970],
-    [50, 1130], [60, 1270], [70, 1400], [80, 1520], [90, 1640], [100, 1850]
+    [0, 100],
+    [2, 140],
+    [5, 180],
+    [10, 235],
+    [15, 300],
+    [20, 755],
+    [30, 1025],
+    [40, 1310],
+    [50, 1525],
+    [60, 1715],
+    [70, 1890],
+    [80, 2050],
+    [90, 2215],
+    [100, 2500]
   ],
   "normalFactor": { "start": 0.85, "end": 0.98 },
   "bossFactor": [1.12, 1.12, 1.08, 1.12, 1.08, 1.12, 1.08, 1.12, 1.1, 1.15],
-  "normalStats": { "hpPerPower": 9.4, "atkPerPower": 1.18, "actEvery": 2, "speed": 90 },
-  "bossStats": { "hpPerPower": 12.4, "atkPerPower": 1.1, "actEvery": 2, "speed": 90 },
+  "normalStats": { "hpPerPower": 14, "atkPerPower": 0.7, "actEvery": 2, "speed": 90 },
+  "bossStats": { "hpPerPower": 20, "atkPerPower": 0.7, "actEvery": 2, "speed": 90 },
   "rewards": {
     "goldBase": 20,
     "goldPerStage": 4,
-    "earlyStageCount": 8,
-    "earlyHammers": 2,
+    "hammerSchedule": [[5, 2], [9, 1], [14, 2]],
     "evenStageHammers": 1,
     "bossHammers": 3
   }

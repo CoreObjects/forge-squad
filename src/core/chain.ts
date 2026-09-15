@@ -118,6 +118,8 @@ export interface PlacementEval {
   weakAfter: number;
   weakBestBefore: number;
   weakBestAfter: number;
+  /** 放入后对当前关卡敌人的胜率变化（启用实战评估时） */
+  winDelta?: number;
   score: number;
 }
 
@@ -151,8 +153,11 @@ export function evaluatePlacement(
   const namesA = combosAfter.map((c) => c.name);
   const gained = multisetDiff(namesA, namesB);
   const lost = multisetDiff(namesB, namesA);
-  const wb = weaknessMatch(chain, weakness, cfg.battle);
-  const wa = weaknessMatch(after, weakness, cfg.battle);
+  // 每轮最多触发一次破势：多次完整命中不再额外加分
+  const wbRaw = weaknessMatch(chain, weakness, cfg.battle);
+  const waRaw = weaknessMatch(after, weakness, cfg.battle);
+  const wb = { ...wbRaw, full: Math.min(1, wbRaw.full) };
+  const wa = { ...waRaw, full: Math.min(1, waRaw.full) };
   const powerDeltaPct = powerBefore > 0 ? ((powerAfter - powerBefore) / powerBefore) * 100 : 0;
   const w = cfg.economy.recommend;
   const score =
@@ -194,10 +199,22 @@ export function recommendPlacement(
   unlockedNodes: number,
   rune: Rune,
   weakness: RuneType[] | null,
+  /** 可选：返回某条链对当前关卡敌人的胜率（0–1），用于把实战效果计入推荐 */
+  winRate?: (c: Chain) => number,
 ): Recommendation {
   const all: PlacementEval[] = [];
   for (let i = 0; i < Math.min(unlockedNodes, CHAIN_SIZE); i++) {
     all.push(evaluatePlacement(cfg, charLevel, chain, rune, i, weakness));
+  }
+  const battleWeight = cfg.economy.recommend.battleWeight ?? 0;
+  if (winRate && battleWeight > 0) {
+    const before = winRate(chain);
+    for (const e of all) {
+      const after = chain.slice();
+      after[e.node] = rune;
+      e.winDelta = winRate(after) - before;
+      e.score += e.winDelta * battleWeight;
+    }
   }
   let best: PlacementEval | null = null;
   for (const e of all) {
@@ -207,7 +224,7 @@ export function recommendPlacement(
   if (!best || best.score <= 0) {
     return { best, all, tag: 'melt', effective: false };
   }
-  const structural = best.gained.length > best.lost.length || best.weakAfter > best.weakBefore;
+  const structural = best.gained.length > best.lost.length || best.weakAfter > best.weakBefore || (best.winDelta ?? 0) > 0.2;
   const effective = best.powerDeltaPct >= w.effectivePowerPct || structural;
   let tag: RecommendTag = 'ok';
   if (best.score >= w.strongScore) tag = 'strong';

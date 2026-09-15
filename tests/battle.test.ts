@@ -1,15 +1,49 @@
 import { failureHints, simulatePve, simulatePvp } from '../src/core/battle';
 import { defaultConfig } from '../src/core/config';
-import type { EnemyDef, RuneType } from '../src/core/types';
+import { p0Boss, p0WinRate, runP0 } from '../src/core/p0';
+import type { RuneType } from '../src/core/types';
 import { chainOf } from './helpers';
 
 const cfg = defaultConfig();
+const P0 = cfg.battle.p0;
 
-/** P0_BALANCE.md 基线：玩家攻击 100 / 生命 1000；重甲守卫 生命 1500 / 攻击 150 / 每 2 节行动 / 破绽 震→锋 */
+/** P0_BALANCE.md 基线：玩家攻击 100 / 生命 1000；重甲守卫 生命 1500 / 攻击 180 / 每 2 节行动 / 破绽 震→锋 */
 function p0Player(types: RuneType[]) {
   return { name: 'P0', atk: 100, hp: 1000, def: 0, speed: 100, chain: chainOf(types) };
 }
-const guard: EnemyDef = { name: '重甲守卫', hp: 1500, atk: 150, def: 0, speed: 0, actEvery: 2, weakness: ['zhen', 'feng'], isBoss: true };
+const guard = p0Boss(cfg);
+
+describe('P0 验收：换位前输、换位后赢（1000 次）', () => {
+  it('配置为最终数值：重甲守卫 生命 1500 / 攻击 180', () => {
+    expect(P0.boss).toMatchObject({ hp: 1500, atk: 180, actEvery: 2, weakness: ['zhen', 'feng'] });
+    expect(P0.player).toMatchObject({ atk: 100, hp: 1000 });
+  });
+
+  it('无针对链「锋锋疾锋御锋」1000 次全部失败', () => {
+    expect(p0WinRate(cfg, P0.plainChain, 1000)).toBe(0);
+    for (let seed = 1; seed <= 1000; seed++) expect(runP0(cfg, P0.plainChain, seed).stats.breaks).toBe(0);
+  });
+
+  it('针对链「震锋疾锋御锋」1000 次胜率 ≥ 95%，每场都触发破势', () => {
+    let wins = 0;
+    for (let seed = 1; seed <= 1000; seed++) {
+      const r = runP0(cfg, P0.tunedChain, seed);
+      expect(r.stats.breaks).toBeGreaterThan(0);
+      if (r.win) wins++;
+    }
+    expect(wins / 1000).toBeGreaterThanOrEqual(0.95);
+  });
+
+  it('破势带来胜率提升：同一针对链去掉 Boss 破绽后胜率明显下降', () => {
+    const withBreak = p0WinRate(cfg, P0.tunedChain, 1000);
+    const withoutBreak = p0WinRate(cfg, P0.tunedChain, 1000, null);
+    expect(withBreak - withoutBreak).toBeGreaterThan(0.15);
+  });
+
+  it('两条验收链只有节点 1 不同（锋 → 震）', () => {
+    expect(P0.plainChain.slice(1)).toEqual(P0.tunedChain.slice(1));
+  });
+});
 
 describe('P0 战斗数值基线', () => {
   it('节点按 1→6 顺序触发，敌人每 2 个节点行动一次', () => {
@@ -27,21 +61,10 @@ describe('P0 战斗数值基线', () => {
     expect(yu.k === 'node' && Math.round(yu.shieldGain)).toBe(120);
   });
 
-  it('无针对链不触发破势；针对链命中「震→锋」触发破势，更快获胜', () => {
-    const plain = simulatePve(cfg, p0Player(['feng', 'feng', 'ji', 'feng', 'yu', 'feng']), guard, 1);
-    expect(plain.stats.breaks).toBe(0);
-    let tuned = 0;
-    let wins = 0;
-    for (let seed = 1; seed <= 200; seed++) {
-      const t = simulatePve(cfg, p0Player(['zhen', 'feng', 'ji', 'feng', 'yu', 'feng']), guard, seed);
-      expect(t.stats.breaks).toBeGreaterThan(0);
-      if (t.win) wins++;
-      if (t.stats.nodes < plain.stats.nodes) tuned++;
-      const brk = t.events.find((e) => e.k === 'break');
-      expect(brk && brk.k === 'break' && Math.round(brk.dmg)).toBe(80);
-    }
-    expect(wins).toBe(200);
-    expect(tuned).toBe(200);
+  it('破势触发瞬间追加 80% 攻击力伤害', () => {
+    const t = simulatePve(cfg, p0Player(P0.tunedChain), guard, 1);
+    const brk = t.events.find((e) => e.k === 'break');
+    expect(brk && brk.k === 'break' && Math.round(brk.dmg)).toBe(80);
   });
 
   it('破势期间 2 个节点受伤 +50%，每轮最多 1 次', () => {

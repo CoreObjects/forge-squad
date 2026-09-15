@@ -5,3 +5,6 @@ dist-wx/
 .DS_Store
 .vite/
 coverage/
+*.rar
+server/data/
+.env

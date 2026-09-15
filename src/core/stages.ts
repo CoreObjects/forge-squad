@@ -74,8 +74,9 @@ export function stageInfo(cfg: GameConfig, index: number): StageInfo {
 
   const requiredPower = medianPowerAt(cfg, index - 1) * factor;
   let hammers = 0;
+  const scheduled = r.hammerSchedule?.find(([maxStage]) => index <= maxStage);
   if (isChapterBoss) hammers = r.bossHammers;
-  else if (index <= r.earlyStageCount) hammers = r.earlyHammers;
+  else if (scheduled) hammers = scheduled[1];
   else if (index % 2 === 0) hammers = r.evenStageHammers;
   const gold = Math.round(r.goldBase + r.goldPerStage * index);
 

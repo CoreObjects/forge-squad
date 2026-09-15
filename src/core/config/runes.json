@@ -2,13 +2,8 @@
   "typeWeights": { "feng": 25, "ji": 25, "yu": 25, "zhen": 25 },
   "typeNames": { "feng": "锋纹", "ji": "疾纹", "yu": "御纹", "zhen": "震纹" },
   "typeShort": { "feng": "锋", "ji": "疾", "yu": "御", "zhen": "震" },
-  "typeDesc": {
-    "feng": "造成一次高系数伤害",
-    "ji": "强化紧邻的下一枚战纹",
-    "yu": "获得护盾",
-    "zhen": "造成伤害并概率使敌人跳过下一次行动"
-  },
-  "typeBase": { "feng": 20, "ji": 20, "yu": 20, "zhen": 20 },
+  "typeDesc": { "feng": "造成一次高系数伤害", "ji": "强化紧邻的下一枚战纹", "yu": "获得护盾", "zhen": "造成伤害并概率使敌人跳过下一次行动" },
+  "typeBase": { "feng": 13, "ji": 13, "yu": 13, "zhen": 13 },
   "statWeights": {
     "feng": { "atk": 1, "hp": 0 },
     "ji": { "atk": 0.5, "hp": 5 },
@@ -17,8 +12,8 @@
   },
   "furnaceCoefBase": 1.18,
   "qualityNames": ["普通", "优秀", "稀有", "史诗", "传说", "神话"],
-  "qualityMult": [1.0, 1.08, 1.18, 1.32, 1.5, 1.72],
-  "qualityEffectMult": [1.0, 1.04, 1.08, 1.13, 1.19, 1.26],
+  "qualityMult": [1, 1.08, 1.18, 1.32, 1.5, 1.72],
+  "qualityEffectMult": [1, 1.04, 1.08, 1.13, 1.19, 1.26],
   "rollMin": 0.92,
   "rollMax": 1.08,
   "qualityTable": [
@@ -34,12 +29,7 @@
     [6, 12, 38, 34, 9, 1]
   ],
   "meltXp": [1, 2, 5, 15, 50, 200],
-  "pity": {
-    "rarePlusEvery": 10,
-    "epicPlusEvery": 50,
-    "legendPlusEvery": 180,
-    "newbieEpicWithin": 12
-  },
+  "pity": { "rarePlusEvery": 10, "epicPlusEvery": 50, "legendPlusEvery": 180, "newbieEpicWithin": 12 },
   "tutorialForcedTypes": ["feng", "ji", "yu", "zhen", "feng"],
   "confirmQualityFrom": 3
 }

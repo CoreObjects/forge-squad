@@ -38,6 +38,13 @@ export interface BattleConfig {
   stacking: 'additive' | 'multiplicative';
   maxRounds: number;
   defConstant: number;
+  /** P0_BALANCE.md 验收基线 */
+  p0: {
+    player: { atk: number; hp: number; def: number; speed: number };
+    boss: { name: string; hp: number; atk: number; def: number; speed: number; actEvery: number; weakness: RuneType[] };
+    plainChain: RuneType[];
+    tunedChain: RuneType[];
+  };
 }
 
 export interface RunesConfig {
@@ -111,8 +118,8 @@ export interface StagesConfig {
   rewards: {
     goldBase: number;
     goldPerStage: number;
-    earlyStageCount: number;
-    earlyHammers: number;
+    /** 前期首通锻造锤分段：[[截至第几关, 每关锻造锤], ...]；之后偶数关给 evenStageHammers */
+    hammerSchedule: [number, number][];
     evenStageHammers: number;
     bossHammers: number;
   };
@@ -147,7 +154,16 @@ export interface EconomyConfig {
     botDailyGrowth: number;
     botLabel: string;
   };
-  recommend: { powerWeight: number; comboWeight: number; weaknessWeight: number; effectivePowerPct: number; strongScore: number };
+  recommend: {
+    powerWeight: number;
+    comboWeight: number;
+    weaknessWeight: number;
+    effectivePowerPct: number;
+    strongScore: number;
+    /** 对当前关卡敌人的胜率变化权重（0 表示只看战力 / 连携 / 破绽） */
+    battleWeight?: number;
+    battleSeeds?: number;
+  };
 }
 
 export interface ShopConfig {

@@ -1,5 +1,5 @@
 {
-  "feng": { "dmg": 1.0 },
+  "feng": { "dmg": 1 },
   "ji": { "nextBoost": 0.35, "boostAffectsStunChance": false },
   "yu": { "shieldPctMaxHp": 0.12, "stackMode": "max" },
   "zhen": { "dmg": 0.4, "stunChance": 0.7 },
@@ -8,16 +8,40 @@
     { "id": "zhuizhan", "name": "追斩", "from": "feng", "to": "feng", "dmgBonus": 0.3, "desc": "连续攻击" },
     { "id": "fangong", "name": "反攻", "from": "yu", "to": "feng", "shieldToDmg": 0.6, "desc": "扛完再反击" },
     { "id": "poxi", "name": "破袭", "from": "zhen", "to": "feng", "dmgBonusIfStun": 0.5, "desc": "先控，再打" },
-    { "id": "xianzhi", "name": "先制", "from": "ji", "to": "zhen", "stunChanceSet": 1.0, "desc": "控制必定成功" },
+    { "id": "xianzhi", "name": "先制", "from": "ji", "to": "zhen", "stunChanceSet": 1, "desc": "控制必定成功" },
     { "id": "gushou", "name": "固守", "from": "yu", "to": "yu", "shieldBonus": 0.5, "desc": "护盾增强" }
   ],
   "triples": [
-    { "id": "jifengzhuizhan", "name": "疾风追斩", "seq": ["ji", "feng", "feng"], "dmgBonus": 0.15 },
-    { "id": "tiebifangong", "name": "铁壁反攻", "seq": ["yu", "yu", "feng"], "dmgBonus": 0.15 }
+    {
+      "id": "jifengzhuizhan",
+      "name": "疾风追斩",
+      "seq": ["ji", "feng", "feng"],
+      "dmgBonus": 0.15
+    },
+    {
+      "id": "tiebifangong",
+      "name": "铁壁反攻",
+      "seq": ["yu", "yu", "feng"],
+      "dmgBonus": 0.15
+    }
   ],
   "break": { "durationNodes": 2, "dmgTakenBonus": 0.5, "instantDmg": 0.8, "maxPerRound": 1 },
   "wrapAdjacency": false,
   "stacking": "additive",
   "maxRounds": 8,
-  "defConstant": 200
+  "defConstant": 200,
+  "p0": {
+    "player": { "atk": 100, "hp": 1000, "def": 0, "speed": 100 },
+    "boss": {
+      "name": "重甲守卫",
+      "hp": 1500,
+      "atk": 180,
+      "def": 0,
+      "speed": 0,
+      "actEvery": 2,
+      "weakness": ["zhen", "feng"]
+    },
+    "plainChain": ["feng", "feng", "ji", "feng", "yu", "feng"],
+    "tunedChain": ["zhen", "feng", "ji", "feng", "yu", "feng"]
+  }
 }

@@ -93,7 +93,8 @@ describe('战纹生成', () => {
 
   it('强度 = 类型基础值 × 1.18^(炉级-1) × 品质系数 × 浮动', () => {
     const cfg = defaultConfig();
-    expect(runeStrength(cfg.runes, 'feng', 0, 1, 1)).toBe(20);
-    expect(runeStrength(cfg.runes, 'feng', 3, 3, 1)).toBe(Math.round(20 * 1.18 * 1.18 * 1.32));
+    const base = cfg.runes.typeBase.feng;
+    expect(runeStrength(cfg.runes, 'feng', 0, 1, 1)).toBe(base);
+    expect(runeStrength(cfg.runes, 'feng', 3, 3, 1)).toBe(Math.round(base * 1.18 * 1.18 * 1.32));
   });
 });

@@ -459,14 +459,34 @@ export class Game {
     return null;
   }
 
+  private recCache = new Map<string, Recommendation>();
+
   recommendationFor(rune: Rune, chain: Chain = this.state.chain): Recommendation {
+    const s = this.state;
+    const key = [rune.id, s.charLevel, s.unlockedNodes, s.stage.next, s.tutorial.step, s.gm.forcedWeakness?.join(''), chain.map((r) => (r ? r.id : '-')).join(',')].join('|');
+    const hit = this.recCache.get(key);
+    if (hit) return hit;
     const target = this.targetWeakness();
-    const rec = recommendPlacement(this.cfg, this.state.charLevel, chain, this.state.unlockedNodes, rune, target ? target.weakness : null);
+    const rc = this.cfg.economy.recommend;
+    let winRate: ((c: Chain) => number) | undefined;
+    if ((rc.battleWeight ?? 0) > 0 && !this.allStagesCleared()) {
+      const enemy = this.stageEnemyNow();
+      const seeds = rc.battleSeeds ?? 4;
+      winRate = (c) => {
+        const f = this.fighter(c);
+        let w = 0;
+        for (let k = 0; k < seeds; k++) if (simulatePve(this.cfg, f, enemy, 7000 + k).win) w++;
+        return w / seeds;
+      };
+    }
+    let rec = recommendPlacement(this.cfg, s.charLevel, chain, s.unlockedNodes, rune, target ? target.weakness : null, winRate);
     const forced = this.tutorialForcedNode();
     if (forced !== null) {
       const e = rec.all[forced];
-      if (e) return { ...rec, best: e, tag: 'strong', effective: true };
+      if (e) rec = { ...rec, best: e, tag: 'strong', effective: true };
     }
+    if (this.recCache.size > 64) this.recCache.clear();
+    this.recCache.set(key, rec);
     return rec;
   }
 

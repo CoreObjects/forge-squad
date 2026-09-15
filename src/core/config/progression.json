@@ -36,5 +36,5 @@
     "leaderboard": "stage:10",
     "shop": "tutorial:done"
   },
-  "tutorialRewards": { "bossWinHammers": 5, "doneHammers": 10 }
+  "tutorialRewards": { "bossWinHammers": 3, "doneHammers": 2 }
 }
