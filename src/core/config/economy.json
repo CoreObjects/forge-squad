@@ -1,0 +1,45 @@
+{
+  "idle": {
+    "hammerIntervalMinutes": 40,
+    "freeCapHours": 12,
+    "goldPerHourBase": 120,
+    "goldPerHourPerStage": 10
+  },
+  "daily": {
+    "resetHour": 0,
+    "tasks": [
+      { "id": "forge", "name": "锻造 20 次", "event": "forge", "target": 20, "hammers": 3, "gold": 400 },
+      { "id": "melt", "name": "熔炼 10 枚战纹", "event": "melt", "target": 10, "hammers": 2, "gold": 300 },
+      { "id": "stage", "name": "挑战主线 5 次", "event": "stage", "target": 5, "hammers": 2, "gold": 200 },
+      { "id": "dailyBoss", "name": "击败每日 Boss", "event": "dailyBossWin", "target": 1, "hammers": 2, "gold": 200 },
+      { "id": "arena", "name": "竞技场挑战 3 次", "event": "arena", "target": 3, "hammers": 1, "gold": 100 }
+    ],
+    "goldScalePerStage": 0.05,
+    "dailyBoss": {
+      "name": "每日试炼魔像",
+      "hammers": 4,
+      "gold": 500,
+      "powerFactor": 1.0,
+      "weaknessRotation": [["zhen", "feng"], ["yu", "feng"], ["ji", "feng"], ["feng", "feng"], ["ji", "zhen"], ["yu", "yu"], ["ji", "feng", "feng"]]
+    }
+  },
+  "arena": {
+    "freeAttempts": 3,
+    "startScore": 1000,
+    "winScore": { "weak": 12, "close": 20, "strong": 30 },
+    "loseScore": -5,
+    "rewardHammers": 1,
+    "rewardGold": 150,
+    "opponentPowerRatio": { "weak": 0.85, "close": 1.0, "strong": 1.12 },
+    "botCount": 40,
+    "botDailyGrowth": 1.1,
+    "botLabel": "系统测试数据"
+  },
+  "recommend": {
+    "powerWeight": 1,
+    "comboWeight": 3,
+    "weaknessWeight": 6,
+    "effectivePowerPct": 2,
+    "strongScore": 4
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "firstCharge": {
+    "id": "first_charge",
+    "name": "首充礼",
+    "price": 6,
+    "hammers": 20,
+    "epicGuarantee": true,
+    "cosmetic": "炽焰锻造特效 · 首充头像框"
+  },
+  "monthlyCard": {
+    "id": "monthly_card",
+    "name": "锻造月卡",
+    "price": 30,
+    "days": 30,
+    "dailyHammers": 8,
+    "idleCapHours": 18,
+    "idleGoldBonus": 0.1
+  },
+  "firstChargeShow": {
+    "minForges": 20,
+    "needPlace": true,
+    "needMelt": true,
+    "needCombo": true,
+    "needBreak": true,
+    "needFail": true
+  }
+}

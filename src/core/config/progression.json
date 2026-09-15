@@ -1,0 +1,40 @@
+{
+  "character": {
+    "atkBase": 50,
+    "atkGrowth": 1.045,
+    "hpPerAtk": 10,
+    "def": 0,
+    "speed": 100,
+    "costBase": 100,
+    "costGrowth": 1.085,
+    "maxLevel": 200
+  },
+  "furnace": [
+    { "level": 1, "xp": 0, "chapter": 0, "gold": 0 },
+    { "level": 2, "xp": 20, "chapter": 1, "gold": 300 },
+    { "level": 3, "xp": 70, "chapter": 2, "gold": 2000 },
+    { "level": 4, "xp": 180, "chapter": 4, "gold": 6000 },
+    { "level": 5, "xp": 420, "chapter": 6, "gold": 14000 },
+    { "level": 6, "xp": 850, "chapter": 9, "gold": 26000 },
+    { "level": 7, "xp": 1550, "chapter": 12, "gold": 45000 },
+    { "level": 8, "xp": 2600, "chapter": 16, "gold": 70000 },
+    { "level": 9, "xp": 4200, "chapter": 20, "gold": 100000 },
+    { "level": 10, "xp": 6500, "chapter": 25, "gold": 140000 }
+  ],
+  "startResources": { "hammers": 5, "gold": 0 },
+  "nodeUnlocks": [
+    { "nodes": 2, "at": "start" },
+    { "nodes": 5, "at": "tutorial:afterBattle2" },
+    { "nodes": 6, "at": "stage:6" }
+  ],
+  "featureUnlocks": {
+    "tenPull": "tutorial:done",
+    "idle": "stage:5",
+    "daily": "stage:5",
+    "arena": "stage:10",
+    "dailyBoss": "stage:10",
+    "leaderboard": "stage:10",
+    "shop": "tutorial:done"
+  },
+  "tutorialRewards": { "bossWinHammers": 5, "doneHammers": 10 }
+}

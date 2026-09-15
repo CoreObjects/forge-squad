@@ -1,0 +1,22 @@
+{
+  "name": "forge-squad",
+  "version": "0.1.0",
+  "private": true,
+  "description": "《锻造小队》V2 MVP —— 战纹链 + 破绽谱 竖屏数值 RPG（微信小游戏优先）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:wx": "node scripts/build-wx.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "sim": "vite-node scripts/sim.ts"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0",
+    "vite-node": "^3.0.0",
+    "vitest": "^3.0.0"
+  }
+}
