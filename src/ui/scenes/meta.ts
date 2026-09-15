@@ -1,4 +1,7 @@
 import { weaknessMatch } from '../../core/chain';
+import type { RuneType } from '../../core/types';
+import { ApiError } from '../../net/api';
+import type { RemoteArenaView } from '../../net/online';
 import type { App, Scene } from '../app';
 import { C, W } from '../theme';
 import type { Ui } from '../ui';
@@ -98,57 +101,192 @@ export class DailyScene implements Scene {
   }
 }
 
+interface ArenaRowVM {
+  rank: number;
+  name: string;
+  score: number;
+  power: number;
+  isSelf: boolean;
+  isTestData: boolean;
+}
+
+interface ArenaVM {
+  online: boolean;
+  score: number;
+  rank: number;
+  wins: number;
+  losses: number;
+  attemptsLeft: number;
+  opponents: {
+    tier: 'weak' | 'close' | 'strong';
+    name: string;
+    isTestData: boolean;
+    power: number;
+    chain: ({ type: RuneType; quality: number } | null)[];
+    fight: () => void;
+  }[];
+  board: ArenaRowVM[];
+}
+
 export class ArenaScene implements Scene {
   name = 'arena';
+  private remote: RemoteArenaView | null = null;
+  private loading = false;
+  private busy = false;
+  private error = '';
+  private needReload = true;
+
+  private load(app: App): void {
+    const online = app.online;
+    if (!online || !online.online || this.loading) return;
+    this.loading = true;
+    this.needReload = false;
+    online
+      .loadArena()
+      .then((v) => {
+        this.remote = v;
+        this.error = '';
+      })
+      .catch((e) => {
+        this.error = e instanceof ApiError ? e.code : '网络异常';
+      })
+      .finally(() => {
+        this.loading = false;
+      });
+  }
+
+  private localVM(app: App): ArenaVM {
+    const g = app.game;
+    const s = g.state;
+    const board = g.leaderboard();
+    const me = board.find((r) => r.isSelf)!;
+    const left = g.arenaAttemptsLeft();
+    const rows = [...board.slice(0, 5)];
+    const idx = board.indexOf(me);
+    for (let k = Math.max(5, idx - 2); k <= Math.min(board.length - 1, idx + 2); k++) rows.push(board[k]);
+    return {
+      online: false,
+      score: s.arena.score,
+      rank: me.rank,
+      wins: s.arena.wins,
+      losses: s.arena.losses,
+      attemptsLeft: left,
+      opponents: g.arenaOpponents().map((o, i) => ({
+        tier: o.tier,
+        name: o.bot.name,
+        isTestData: true,
+        power: o.power,
+        chain: o.bot.chainTypes.map((type) => ({ type, quality: o.bot.quality })),
+        fight: () => {
+          const b = g.challengeArena(i);
+          if (b) app.push(new BattleScene({ kind: 'arena', battle: b }));
+          else app.toast(left <= 0 ? '今日次数已用完' : '先处理锻造结果', C.accent2);
+        },
+      })),
+      board: rows,
+    };
+  }
+
+  private remoteVM(app: App, v: RemoteArenaView): ArenaVM {
+    const seen = new Set<number>();
+    const board: ArenaRowVM[] = [];
+    for (const r of [...v.top.slice(0, 5), ...v.around]) {
+      if (seen.has(r.rank)) continue;
+      seen.add(r.rank);
+      board.push(r);
+    }
+    return {
+      online: true,
+      score: v.score,
+      rank: v.rank,
+      wins: v.wins,
+      losses: v.losses,
+      attemptsLeft: v.attemptsLeft,
+      opponents: v.opponents.map((o) => ({
+        tier: o.tier,
+        name: o.name,
+        isTestData: o.isTestData,
+        power: o.power,
+        chain: o.chain.map((r) => (r ? { type: r.type as RuneType, quality: r.quality } : null)),
+        fight: () => {
+          if (this.busy) return;
+          if (app.game.state.pending.length > 0) {
+            app.toast('先处理锻造结果', C.accent2);
+            return;
+          }
+          this.busy = true;
+          app
+            .online!.challengeArena(o.opponentId)
+            .then((b) => {
+              this.needReload = true;
+              app.push(new BattleScene({ kind: 'arena', battle: b }));
+            })
+            .catch((e) => {
+              const code = e instanceof ApiError ? e.code : '';
+              app.toast(code === 'no_attempts' ? '今日次数已用完' : code === 'offer_expired' ? '对手已刷新，请重新选择' : '挑战失败：网络异常', C.accent2);
+              this.needReload = true;
+            })
+            .finally(() => {
+              this.busy = false;
+            });
+        },
+      })),
+      board,
+    };
+  }
 
   render(app: App, ui: Ui): void {
     const g = app.game;
     const cfg = g.cfg;
-    const s = g.state;
     let y = drawPage(app, ui, '竞技场');
-    const board = g.leaderboard();
-    const me = board.find((r) => r.isSelf)!;
-    const left = g.arenaAttemptsLeft();
+    const online = !!app.online?.online;
+    if (online && this.needReload && app.top() === this) this.load(app);
+    if (online && !this.remote) {
+      ui.text(this.error ? `加载失败：${this.error}` : '正在连接竞技场…', W / 2, y + 120, { size: 28, color: this.error ? C.bad : C.sub, align: 'center' });
+      if (this.error) ui.button('arena_retry', W / 2 - 120, y + 180, 240, 80, '重试', () => (this.needReload = true), { size: 28 });
+      return;
+    }
+    const vm = online && this.remote ? this.remoteVM(app, this.remote) : this.localVM(app);
     ui.panel(24, y, W - 48, 110);
-    ui.text(`积分 ${s.arena.score}`, 50, y + 40, { size: 32, bold: true, color: C.gold });
-    ui.text(`排名 第 ${me.rank} 名`, 50, y + 82, { size: 24 });
-    ui.text(`今日剩余 ${left}/${cfg.economy.arena.freeAttempts} 次`, W - 50, y + 40, { size: 26, bold: true, align: 'right', color: left > 0 ? C.good : C.dim });
-    ui.text(`胜 ${s.arena.wins} · 负 ${s.arena.losses}`, W - 50, y + 82, { size: 22, color: C.sub, align: 'right' });
+    ui.text(`积分 ${vm.score}`, 50, y + 40, { size: 32, bold: true, color: C.gold });
+    ui.text(`排名 第 ${vm.rank} 名`, 50, y + 82, { size: 24 });
+    ui.text(`今日剩余 ${vm.attemptsLeft}/${cfg.economy.arena.freeAttempts} 次`, W - 50, y + 40, {
+      size: 26,
+      bold: true,
+      align: 'right',
+      color: vm.attemptsLeft > 0 ? C.good : C.dim,
+    });
+    ui.text(`胜 ${vm.wins} · 负 ${vm.losses}${vm.online ? '' : ' · 离线'}`, W - 50, y + 82, { size: 22, color: C.sub, align: 'right' });
     y += 130;
 
     const tierName = { weak: '偏弱', close: '接近', strong: '略强' } as const;
     const tierColor = { weak: C.good, close: C.gold, strong: C.bad } as const;
-    g.arenaOpponents().forEach((o, i) => {
+    vm.opponents.forEach((o, i) => {
       ui.panel(24, y, W - 48, 150);
       tag(ui, tierName[o.tier], 44, y + 34, tierColor[o.tier]);
-      ui.text(o.bot.name, 130, y + 34, { size: 26, bold: true });
-      ui.text(cfg.economy.arena.botLabel, 130, y + 66, { size: 18, color: C.dim });
+      ui.text(o.name, 130, y + 34, { size: 26, bold: true, maxWidth: 360 });
+      ui.text(o.isTestData ? cfg.economy.arena.botLabel : '真实玩家', 130, y + 66, { size: 18, color: o.isTestData ? C.dim : C.good });
       ui.text(`战力 ${formatNum(o.power)}`, W - 50, y + 34, { size: 24, bold: true, align: 'right', color: C.gold });
-      o.bot.chainTypes.forEach((t, k) => {
-        drawRune(ui, cfg, t, o.bot.quality, 64 + k * 58, y + 112, 46);
+      o.chain.forEach((r, k) => {
+        if (r) drawRune(ui, cfg, r.type, r.quality, 64 + k * 58, y + 112, 46);
         if (k < 5) ui.text('›', 92 + k * 58, y + 112, { size: 20, color: C.dim, align: 'center' });
       });
-      ui.button(`arena_fight_${i}`, W - 220, y + 76, 170, 60, '挑战', () => {
-        const b = g.challengeArena(i);
-        if (b) app.push(new BattleScene({ kind: 'arena', battle: b }));
-        else app.toast(left <= 0 ? '今日次数已用完' : '先处理锻造结果', C.accent2);
-      }, { fill: '#e2574c', color: '#fff', size: 26, disabled: left <= 0 });
+      ui.button(`arena_fight_${i}`, W - 220, y + 76, 170, 60, this.busy ? '结算中…' : '挑战', o.fight, {
+        fill: '#e2574c',
+        color: '#fff',
+        size: 26,
+        disabled: vm.attemptsLeft <= 0 || this.busy,
+      });
       y += 162;
     });
 
     y += 6;
     ui.text('排行榜', 40, y + 10, { size: 26, bold: true, color: C.sub });
     y += 34;
-    const rows = [...board.slice(0, 5)];
-    const idx = board.indexOf(me);
-    for (let k = Math.max(5, idx - 2); k <= Math.min(board.length - 1, idx + 2); k++) rows.push(board[k]);
-    const seen = new Set<number>();
-    for (const r of rows) {
-      if (seen.has(r.rank)) continue;
-      seen.add(r.rank);
+    for (const r of vm.board) {
       ui.rect(24, y, W - 48, 44, r.isSelf ? 'rgba(255,209,102,0.18)' : C.panel, 10);
       ui.text(`${r.rank}`, 60, y + 22, { size: 22, bold: true, align: 'center', color: r.rank <= 3 ? C.gold : C.sub });
-      ui.text(r.name, 100, y + 22, { size: 22, bold: r.isSelf, color: r.isSelf ? C.gold : C.text });
+      ui.text(r.isSelf ? `${r.name}（我）` : r.name, 100, y + 22, { size: 22, bold: r.isSelf, color: r.isSelf ? C.gold : C.text, maxWidth: 300 });
       ui.text(`战力 ${formatNum(r.power)}`, 430, y + 22, { size: 20, color: C.sub });
       ui.text(`${r.score}`, W - 50, y + 22, { size: 22, bold: true, align: 'right' });
       y += 48;
@@ -178,7 +316,10 @@ export class ShopScene implements Scene {
       if (r.ok) {
         app.sfx('win');
         app.toast('购买成功，权益已到账', C.gold);
-      } else if (r.error !== 'cancelled') app.toast('购买未完成', C.bad);
+      } else if (r.error === 'pending') app.toast('支付处理中，到账后会自动发放', C.accent2);
+      else if (r.error === 'offline') app.toast('未连接服务器，暂时无法购买', C.bad);
+      else if (r.error === 'already_bought') app.toast('首充已购买过', C.accent2);
+      else if (r.error !== 'cancelled') app.toast('购买未完成', C.bad);
     };
 
     const fc = cfg.shop.firstCharge;
@@ -258,7 +399,15 @@ export class SettingsScene implements Scene {
     });
     ui.panel(24, y, W - 48, 160);
     ui.text('账户', 50, y + 44, { size: 30 });
-    ui.text(`玩家 ID：${s.seed.toString(36).toUpperCase()}`, 50, y + 94, { size: 24, color: C.sub });
+    const online = app.online;
+    const account = online
+      ? online.online
+        ? `${online.api.userName} · 已连接服务器`
+        : online.status === 'connecting'
+          ? '正在连接服务器…'
+          : `离线模式（${online.lastError}）`
+      : `本地账号 ${s.seed.toString(36).toUpperCase()}`;
+    ui.text(account, 50, y + 94, { size: 24, color: online?.online ? C.good : C.sub, maxWidth: W - 100 });
     ui.text(`创建于 ${new Date(s.createdAt).toLocaleDateString()}`, 50, y + 130, { size: 22, color: C.dim });
     y += 190;
     ui.text(`版本 0.1.0 · ${app.platform.name === 'wx' ? '微信小游戏' : '网页调试版'}`, W / 2, y, { size: 22, color: C.dim, align: 'center' });

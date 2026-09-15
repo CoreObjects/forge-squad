@@ -21,7 +21,7 @@ await build({
   minify: !gm,
   sourcemap: gm ? 'inline' : false,
   outfile: resolve(out, 'game.js'),
-  define: { __GM__: JSON.stringify(gm) },
+  define: { __GM__: JSON.stringify(gm), __API_BASE__: JSON.stringify(process.env.FORGE_API_BASE ?? '') },
   loader: { '.json': 'json' },
   logLevel: 'info',
 });
@@ -29,4 +29,4 @@ await build({
 for (const f of ['game.json', 'project.config.json']) {
   copyFileSync(resolve(root, 'wechat', f), resolve(out, f));
 }
-console.log(`微信小游戏包已生成：${out}${gm ? '（含 GM 面板）' : ''}`);
+console.log(`微信小游戏包已生成：${out}${gm ? '（含 GM 面板）' : ''}${process.env.FORGE_API_BASE ? ` 服务端：${process.env.FORGE_API_BASE}` : '（未配置服务端，离线运行）'}`);

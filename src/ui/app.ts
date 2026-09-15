@@ -1,4 +1,5 @@
 import type { Game } from '../core/game';
+import type { OnlineServices } from '../net/online';
 import { TUTORIAL_TEXT } from '../core/tutorial';
 import type { SfxName, SynthAudio } from '../platform/audio';
 import type { Platform } from '../platform/platform';
@@ -47,6 +48,7 @@ export class App {
   private sizeKey = '';
   private audioUnlocked = false;
   sceneFactory: Record<string, (app: App) => Scene> = {};
+  online: OnlineServices | null = null;
 
   constructor(
     public game: Game,
@@ -184,6 +186,7 @@ export class App {
     });
     p.onHide(() => {
       this.game.endSession();
+      this.online?.onHide();
       this.audio.suspend();
     });
     p.onShow(() => {

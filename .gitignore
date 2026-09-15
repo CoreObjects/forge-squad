@@ -8,3 +8,4 @@ coverage/
 *.rar
 server/data/
 .env
+server/dist/

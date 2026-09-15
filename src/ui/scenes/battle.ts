@@ -191,7 +191,8 @@ export class BattleScene implements Scene {
     const weakness = !isArena ? spec.battle.enemy.weakness : null;
     if (weakness) drawWeakness(ui, cfg, weakness, 40, top + 100, 34);
     if (isArena) {
-      ui.text('系统测试数据', W / 2, top + 80, { size: 18, color: C.dim, align: 'center' });
+      const testData = spec.battle.opponent.isTestData;
+      ui.text(testData ? cfg.economy.arena.botLabel : '真实玩家', W / 2, top + 80, { size: 18, color: testData ? C.dim : C.good, align: 'center' });
       const oc = spec.battle.opponentChain;
       drawChain(ui, cfg, oc, { x: (W - chainWidth(48, 10)) / 2, y: top + 98, node: 48, gap: 10, unlocked: 6, lit: this.eLit, showIndex: false, showCombos: false });
     }

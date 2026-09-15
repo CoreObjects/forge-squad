@@ -1,4 +1,5 @@
 import { boot } from './boot';
+import { fetchTransport } from './net/api';
 import type { Platform } from './platform/platform';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
@@ -59,6 +60,17 @@ const platform: Platform = {
   },
   gmEnabled: __GM__ || params.get('gm') === '1',
   safeTop: 0,
+  apiBase: (params.get('api') ?? __API_BASE__).replace(/\/$/, ''),
+  transport: fetchTransport,
+  deviceId: () => {
+    const key = 'forge_device_id';
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = `web-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+      localStorage.setItem(key, id);
+    }
+    return id;
+  },
 };
 
 const app = boot(platform);

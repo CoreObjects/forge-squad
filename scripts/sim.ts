@@ -10,7 +10,6 @@ function firstRows(bot: Bot): Checkpoint[] {
   return bot.curve.filter((c) => c.minutes % 5 === 0);
 }
 
-declare const process: { argv: string[] };
 const args = process.argv.slice(2);
 const argNum = (name: string, def: number) => {
   const i = args.indexOf(`--${name}`);

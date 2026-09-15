@@ -1,4 +1,6 @@
 import { boot } from './boot';
+import type { Transport } from './net/api';
+import { PaymentCancelled } from './net/payment';
 import type { CanvasLike, Platform } from './platform/platform';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -13,6 +15,19 @@ const firstTouch = (e: any) => {
   const t = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0]);
   return t ? { x: t.clientX, y: t.clientY } : { x: 0, y: 0 };
 };
+
+const wxTransport: Transport = (req) =>
+  new Promise((resolve, reject) =>
+    wx.request({
+      url: req.url,
+      method: req.method,
+      data: req.body === undefined ? undefined : JSON.stringify(req.body),
+      header: req.headers,
+      dataType: 'json',
+      success: (r: any) => resolve({ status: r.statusCode, data: r.data }),
+      fail: (e: any) => reject(new Error(e?.errMsg ?? 'request failed')),
+    }),
+  );
 
 const platform: Platform = {
   name: 'wx',
@@ -68,6 +83,27 @@ const platform: Platform = {
     ),
   gmEnabled: __GM__,
   safeTop: designSafeTop(),
+  apiBase: __API_BASE__.replace(/\/$/, ''),
+  transport: wxTransport,
+  wxLogin: () =>
+    new Promise((resolve, reject) =>
+      wx.login({
+        success: (r: any) => (r.code ? resolve(r.code) : reject(new Error('no code'))),
+        fail: (e: any) => reject(new Error(e?.errMsg ?? 'wx.login failed')),
+      }),
+    ),
+  virtualPayment: (p) =>
+    new Promise((resolve, reject) =>
+      wx.requestVirtualPayment({
+        mode: p.mode,
+        signData: p.signData,
+        paySig: p.paySig,
+        signature: p.signature,
+        success: () => resolve(),
+        fail: (e: any) => reject(e?.errCode === -2 || /cancel/i.test(e?.errMsg ?? '') ? new PaymentCancelled() : new Error(e?.errMsg ?? 'pay failed')),
+      }),
+    ),
+  deviceId: () => 'wx',
 };
 
 /** 把系统安全区顶部换算到设计坐标（设计区域在屏幕内等比居中）。 */

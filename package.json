@@ -10,13 +10,20 @@
     "build:wx": "node scripts/build-wx.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "sim": "vite-node scripts/sim.ts"
+    "sim": "vite-node scripts/sim.ts",
+    "server": "vite-node server/src/index.ts",
+    "server:build": "esbuild server/src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=server/dist/index.mjs",
+    "start:server": "node server/dist/index.mjs"
   },
   "devDependencies": {
+    "@types/node": "^24.13.4",
     "esbuild": "^0.24.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.0",
     "vite-node": "^3.0.0",
     "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=22.13"
   }
 }

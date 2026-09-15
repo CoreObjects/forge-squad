@@ -153,7 +153,7 @@ export interface StageBattle {
 }
 
 export interface ArenaBattle {
-  opponent: ArenaBot;
+  opponent: { name: string; isTestData: boolean };
   opponentPower: number;
   tier: ArenaTier;
   result: BattleResult;
@@ -176,6 +176,8 @@ export interface GameDeps {
   now: () => number;
   save?: (json: string) => void;
   payment?: PaymentProvider;
+  /** 订单发放到存档后回调（联网时用来向服务端确认已发放） */
+  onOrderGranted?: (orderId: string) => void;
 }
 
 type Listener = () => void;
@@ -284,7 +286,7 @@ export class Game {
   startSession(isFirst: boolean): void {
     this.analytics.newSession();
     if (isFirst) this.analytics.track('first_enter', {});
-    this.analytics.track('session_start', { stage: this.state.stage.next, power: this.power() });
+    this.analytics.track('session_start', { stage: this.state.stage.next, power: this.power(), hammers: this.state.hammers, gold: this.state.gold });
     this.ensureDaily();
     this.refreshUnlocks();
     if (this.state.tutorial.step === 'boss' && this.state.tutorial.bossPower === null) this.setupTutorialBoss();
@@ -574,6 +576,7 @@ export class Game {
         weaknessBefore: evalChosen ? evalChosen.weakBefore : 0,
         weaknessAfter: evalChosen ? evalChosen.weakAfter : 0,
         nonPurePower: nonPure,
+        effective: rec.effective,
       });
     }
     if (node === null) {
@@ -584,6 +587,7 @@ export class Game {
         strength: rune.strength,
         recommendedNode: rec.best && rec.tag !== 'melt' ? rec.best.node : null,
         finalNode: null,
+        effective: rec.effective,
       });
     }
     s.pending.shift();
@@ -1067,7 +1071,68 @@ export class Game {
     });
     this.refreshOpponents();
     this.commit();
-    return { opponent: opp.bot, opponentPower: opp.power, tier: opp.tier, result, scoreDelta, rewards, playerChain: chain, opponentChain: oppFighter.chain };
+    return { opponent: { name: opp.bot.name, isTestData: true }, opponentPower: opp.power, tier: opp.tier, result, scoreDelta, rewards, playerChain: chain, opponentChain: oppFighter.chain };
+  }
+
+  /**
+   * 联网竞技场：应用服务端结算结果（服务端权威），本地按同一种子复现战斗用于演出。
+   */
+  applyRemoteArena(r: {
+    seed: number;
+    win: boolean;
+    tier: ArenaTier;
+    scoreDelta: number;
+    score: number;
+    attemptsLeft: number;
+    attacker: DefenseSnapshot;
+    defender: DefenseSnapshot;
+    opponent: { name: string; power: number; isTestData: boolean };
+  }): ArenaBattle {
+    const s = this.state;
+    const ac = this.cfg.economy.arena;
+    this.ensureDaily();
+    const attacker = snapshotFighter('我', r.attacker);
+    const defender = snapshotFighter(r.opponent.name, r.defender);
+    const result = simulatePvp(this.cfg, attacker, defender, r.seed);
+    s.arena.score = r.score;
+    if (r.win) s.arena.wins++;
+    else s.arena.losses++;
+    s.daily.arenaAttemptsUsed = Math.max(s.daily.arenaAttemptsUsed, ac.freeAttempts - r.attemptsLeft);
+    const rewards = { hammers: ac.rewardHammers, gold: Math.round(ac.rewardGold * this.dailyGoldScale()) };
+    s.hammers += rewards.hammers;
+    s.gold += rewards.gold;
+    this.dailyProgress('arena', 1);
+    this.analytics.track('arena_challenge', {
+      tier: r.tier,
+      opponentPower: r.opponent.power,
+      opponentIsTestData: r.opponent.isTestData,
+      playerPower: r.attacker.power,
+      win: r.win,
+      replayMatches: result.win === r.win,
+      scoreDelta: r.scoreDelta,
+      score: r.score,
+      online: true,
+    });
+    this.commit();
+    return {
+      opponent: { name: r.opponent.name, isTestData: r.opponent.isTestData },
+      opponentPower: r.opponent.power,
+      tier: r.tier,
+      result: result.win === r.win ? result : { ...result, win: r.win },
+      scoreDelta: r.scoreDelta,
+      rewards,
+      playerChain: attacker.chain,
+      opponentChain: defender.chain,
+    };
+  }
+
+  /** 用云存档等外部来源替换整个状态 */
+  replaceState(state: GameState): void {
+    this.state = state;
+    this.recCache.clear();
+    this.ensureDaily();
+    this.refreshUnlocks();
+    this.commit();
   }
 
   leaderboard(): { rank: number; name: string; score: number; power: number; isSelf: boolean; isTestData: boolean }[] {
@@ -1164,6 +1229,7 @@ export class Game {
     if (s.stuck) s.stuck.paid = true;
     this.analytics.track('pay_success', { product: productId, orderId, stage: s.stage.next, power: this.power() });
     this.commit();
+    this.deps.onOrderGranted?.(orderId);
     return true;
   }
 
