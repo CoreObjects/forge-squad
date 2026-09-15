@@ -49,6 +49,10 @@ export class OnlineServices {
     this.cloud = new CloudSave(this.api, game, env.store);
     this.analytics = new RemoteAnalytics(this.api, env.store);
     game.analytics.addSink(this.analytics.sink);
+    // 云存档被其他设备的版本替换后，立即按服务端订单重新校准付费权益
+    this.cloud.addReplacedListener(() => {
+      if (this.api.loggedIn) void this.reconcileEntitlements().catch(() => undefined);
+    });
   }
 
   onStatus(cb: (s: OnlineStatus) => void): void {
@@ -71,7 +75,7 @@ export class OnlineServices {
       this.game.setPayment(new ServerPaymentProvider(this.api, this.env.virtualPayment ?? null, this.env.confirmDevPay));
       this.analytics.start();
       this.syncDecision = await this.cloud.bootstrap();
-      await this.syncOrders();
+      await this.reconcileEntitlements();
       await this.uploadSnapshotIfNeeded();
       this.game.onChange(() => this.scheduleSnapshot());
       void this.analytics.flush();
@@ -97,19 +101,30 @@ export class OnlineServices {
     else await this.api.loginDev(this.env.deviceId());
   }
 
-  /** 服务端已到账、存档里还没发放的订单（例如支付后游戏被关掉） */
-  async syncOrders(): Promise<number> {
-    const { orders } = await this.api.payPending();
-    let granted = 0;
-    for (const o of orders) {
-      if (this.game.state.shop.grantedOrders.includes(o.outTradeNo)) {
-        await this.api.payAck(o.outTradeNo).catch(() => undefined);
-        continue;
+  private reconciling: Promise<{ restored: string[]; changed: boolean }> | null = null;
+
+  /**
+   * 付费权益校准：以服务端已到账订单为准，补发存档里缺失的订单、覆盖首充 / 月卡状态，
+   * 再把校准后的存档上传。登录、云存档被替换（多设备冲突）、回到前台时都会调用。
+   */
+  reconcileEntitlements(): Promise<{ restored: string[]; changed: boolean }> {
+    if (this.reconciling) return this.reconciling;
+    this.reconciling = (async () => {
+      const e = await this.api.payEntitlements();
+      const r = this.game.applyEntitlements(e);
+      if (r.changed) await this.cloud.flush();
+      for (const o of e.orders) {
+        if (!o.acked && this.game.state.shop.grantedOrders.includes(o.outTradeNo)) await this.api.payAck(o.outTradeNo).catch(() => undefined);
       }
-      if (this.game.grantOrder(o.productId, o.outTradeNo)) granted++;
-      else await this.api.payAck(o.outTradeNo).catch(() => undefined);
-    }
-    return granted;
+      return r;
+    })().finally(() => {
+      this.reconciling = null;
+    });
+    return this.reconciling;
+  }
+
+  onShow(): void {
+    if (this.online) void this.reconcileEntitlements().catch(() => undefined);
   }
 
   onOrderGranted(orderId: string): void {

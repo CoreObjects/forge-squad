@@ -43,7 +43,7 @@ export class CloudSave {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private uploading: Promise<void> | null = null;
   private applying = false;
-  onReplaced: () => void = () => {};
+  private replacedListeners: (() => void)[] = [];
   onError: (e: unknown) => void = () => {};
 
   constructor(
@@ -102,7 +102,12 @@ export class CloudSave {
     this.meta.serverVersion = version;
     this.meta.dirty = false;
     this.persistMeta();
-    this.onReplaced();
+    for (const l of this.replacedListeners) l();
+  }
+
+  /** 存档被服务端版本替换后回调 */
+  addReplacedListener(l: () => void): void {
+    this.replacedListeners.push(l);
   }
 
   /** 每次本地保存时调用 */

@@ -191,6 +191,7 @@ export class App {
     });
     p.onShow(() => {
       this.game.startSession(false);
+      this.online?.onShow();
       if (this.audioUnlocked) this.audio.unlock();
     });
     const loop = (t: number) => {

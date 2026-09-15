@@ -22,6 +22,37 @@ interface OrderRow {
   acked_at: number | null;
 }
 
+const DAY = 86_400_000;
+
+export interface Entitlements {
+  serverNow: number;
+  firstCharge: { outTradeNo: string; deliveredAt: number } | null;
+  /** 月卡当前（最近一段连续）有效期；从未购买时为 0 */
+  monthlyCard: { start: number; end: number };
+  orders: { outTradeNo: string; productId: string; deliveredAt: number; acked: boolean }[];
+}
+
+export function computeEntitlements(ctx: Ctx, userId: number): Entitlements {
+  const rows = ctx.db
+    .prepare("SELECT out_trade_no, product_id, delivered_at, acked_at FROM orders WHERE user_id = ? AND status = 'delivered' ORDER BY delivered_at, out_trade_no")
+    .all(userId) as { out_trade_no: string; product_id: string; delivered_at: number; acked_at: number | null }[];
+  let start = 0;
+  let end = 0;
+  for (const r of rows) {
+    if (r.product_id !== shop.monthlyCard.id) continue;
+    // 有效期内续费顺延；过期后再买从到账时刻重新开始
+    if (r.delivered_at > end) start = r.delivered_at;
+    end = Math.max(end, r.delivered_at) + shop.monthlyCard.days * DAY;
+  }
+  const first = rows.find((r) => r.product_id === shop.firstCharge.id);
+  return {
+    serverNow: ctx.now(),
+    firstCharge: first ? { outTradeNo: first.out_trade_no, deliveredAt: first.delivered_at } : null,
+    monthlyCard: { start, end },
+    orders: rows.map((r) => ({ outTradeNo: r.out_trade_no, productId: r.product_id, deliveredAt: r.delivered_at, acked: !!r.acked_at })),
+  };
+}
+
 function product(productId: string): { id: string; priceFen: number; name: string } {
   if (productId === shop.firstCharge.id) return { id: productId, priceFen: Math.round(shop.firstCharge.price * 100), name: shop.firstCharge.name };
   if (productId === shop.monthlyCard.id) return { id: productId, priceFen: Math.round(shop.monthlyCard.price * 100), name: shop.monthlyCard.name };
@@ -139,11 +170,8 @@ export function registerPay(router: Router, ctx: Ctx): void {
     return { json: { ok: true } };
   });
 
-  router.get('/api/pay/entitlements', (req) => {
-    const rows = db.prepare("SELECT product_id, COUNT(*) AS n FROM orders WHERE user_id = ? AND status = 'delivered' GROUP BY product_id").all(req.userId) as { product_id: string; n: number }[];
-    const count = (id: string) => rows.find((r) => r.product_id === id)?.n ?? 0;
-    return { json: { firstChargeBought: count(shop.firstCharge.id) > 0, monthlyCards: count(shop.monthlyCard.id) } };
-  });
+  /** 付费权益的最终权威：按已到账订单计算（与客户端存档无关，已确认发放的订单也包含在内） */
+  router.get('/api/pay/entitlements', (req) => ({ json: computeEntitlements(ctx, req.userId) }));
 
   // 微信消息推送：URL 校验（GET）与虚拟支付发货通知（POST，明文 JSON 模式）
   router.get(

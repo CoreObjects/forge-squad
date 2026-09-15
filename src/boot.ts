@@ -60,10 +60,10 @@ export function boot(platform: Platform): App {
     });
     app.online = online;
     game.setPayment(unavailablePayment);
-    online.cloud.onReplaced = () => {
+    online.cloud.addReplacedListener(() => {
       app.popTo('main');
       app.toast('已载入云存档', C.good);
-    };
+    });
   } else {
     game.setPayment(new MockPaymentProvider((p) => confirmPay(p, '模拟支付（未连接服务端）')));
   }

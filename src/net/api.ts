@@ -178,6 +178,15 @@ export class ApiClient {
     return this.req('GET', '/api/pay/pending');
   }
 
+  payEntitlements(): Promise<{
+    serverNow: number;
+    firstCharge: { outTradeNo: string; deliveredAt: number } | null;
+    monthlyCard: { start: number; end: number };
+    orders: { outTradeNo: string; productId: string; deliveredAt: number; acked: boolean }[];
+  }> {
+    return this.req('GET', '/api/pay/entitlements');
+  }
+
   payAck(outTradeNo: string): Promise<{ ok: boolean }> {
     return this.req('POST', '/api/pay/ack', { outTradeNo });
   }

@@ -156,7 +156,10 @@ describe('微信虚拟支付', () => {
       expect(pending.data.orders).toEqual([{ outTradeNo, productId: 'first_charge', status: 'delivered', acked: false }]);
       await s.call('POST', '/api/pay/ack', { outTradeNo }, t);
       expect((await s.call('GET', '/api/pay/pending', undefined, t)).data.orders).toEqual([]);
-      expect((await s.call('GET', '/api/pay/entitlements', undefined, t)).data).toEqual({ firstChargeBought: true, monthlyCards: 0 });
+      const ent = (await s.call('GET', '/api/pay/entitlements', undefined, t)).data;
+      expect(ent.firstCharge.outTradeNo).toBe(outTradeNo);
+      expect(ent.monthlyCard).toEqual({ start: 0, end: 0 });
+      expect(ent.orders).toEqual([expect.objectContaining({ outTradeNo, productId: 'first_charge', acked: true })]);
       expect((await s.call('POST', '/api/pay/create', { productId: 'first_charge' }, t)).status).toBe(409);
 
       const other = await s.wxUser('someone');

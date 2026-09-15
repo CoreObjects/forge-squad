@@ -1233,6 +1233,54 @@ export class Game {
     return true;
   }
 
+  /**
+   * 按服务端订单校准付费权益（服务端为最终权威）。
+   * - 服务端已到账、但当前存档没有发放记录的订单：补发（首充的锻造锤与史诗保底；月卡时长以服务端为准）
+   * - 首充标记、外观、月卡有效期：一律以服务端为准，存档里的值被覆盖
+   * 多次调用结果相同（幂等）。
+   */
+  applyEntitlements(e: {
+    serverNow: number;
+    firstCharge: { outTradeNo: string } | null;
+    monthlyCard: { start: number; end: number };
+    orders: { outTradeNo: string; productId: string }[];
+  }): { restored: string[]; changed: boolean } {
+    const s = this.state;
+    const f = this.cfg.shop.firstCharge;
+    const m = this.cfg.shop.monthlyCard;
+    const before = JSON.stringify([s.shop, s.hammers, s.pity.firstChargeEpicPending]);
+    const restored: string[] = [];
+    for (const o of e.orders) {
+      if (s.shop.grantedOrders.includes(o.outTradeNo)) continue;
+      if (o.productId === f.id) {
+        s.hammers += f.hammers;
+        if (f.epicGuarantee) s.pity.firstChargeEpicPending = true;
+      } else if (o.productId !== m.id) {
+        continue;
+      }
+      s.shop.grantedOrders.push(o.outTradeNo);
+      restored.push(o.outTradeNo);
+    }
+    const bought = !!e.firstCharge;
+    s.shop.firstChargeBought = bought;
+    s.shop.cosmeticOwned = bought;
+    if (!bought) s.pity.firstChargeEpicPending = false;
+    // 服务端时间换算到本机时间，保证剩余时长一致
+    // （网络往返造成的毫秒级偏差忽略，避免每次校准都改存档）
+    const offset = this.now() - e.serverNow;
+    const targetStart = e.monthlyCard.end > 0 ? e.monthlyCard.start + offset : 0;
+    const targetEnd = e.monthlyCard.end > 0 ? e.monthlyCard.end + offset : 0;
+    const TOLERANCE = 60_000;
+    if (Math.abs(s.shop.monthlyEnd - targetEnd) > TOLERANCE || (targetEnd === 0) !== (s.shop.monthlyEnd === 0)) s.shop.monthlyEnd = targetEnd;
+    if (Math.abs(s.shop.monthlyStart - targetStart) > TOLERANCE || (targetStart === 0) !== (s.shop.monthlyStart === 0)) s.shop.monthlyStart = targetStart;
+    const changed = before !== JSON.stringify([s.shop, s.hammers, s.pity.firstChargeEpicPending]);
+    if (changed) {
+      if (restored.length) this.analytics.track('entitlement_restore', { orders: restored, firstChargeBought: bought, monthlyEnd: s.shop.monthlyEnd });
+      this.commit();
+    }
+    return { restored, changed };
+  }
+
   monthlyDaysLeft(): number {
     if (!this.monthlyActive()) return 0;
     return Math.ceil((this.state.shop.monthlyEnd - this.now()) / DAY);

@@ -1,48 +1,12 @@
 import { defaultConfig } from '../../src/core/config';
 import { Game, type GameState } from '../../src/core/game';
-import { fetchTransport, type KeyValueStore } from '../../src/net/api';
+import { fetchTransport } from '../../src/net/api';
 import { decideSync, progressScore, type SaveMeta } from '../../src/net/cloudSave';
 import { OnlineServices } from '../../src/net/online';
 import { buildReport } from '../src/services/report';
 import { playTutorial } from '../../tests/helpers';
+import { device, MemStore } from './device';
 import { startServer } from './helpers';
-
-class MemStore implements KeyValueStore {
-  m = new Map<string, string>();
-  get(k: string) {
-    return this.m.get(k) ?? null;
-  }
-  set(k: string, v: string) {
-    this.m.set(k, v);
-  }
-}
-
-type Srv = Awaited<ReturnType<typeof startServer>>;
-
-/** 模拟一台设备上的游戏客户端（与 boot.ts 同样的装配方式） */
-function device(srv: Srv, deviceId: string, opts: { state?: GameState; store?: MemStore; confirmPay?: boolean } = {}) {
-  const cfg = defaultConfig();
-  const store = opts.store ?? new MemStore();
-  const clock = srv.clock;
-  let online: OnlineServices | null = null;
-  const state = opts.state ?? Game.newState(cfg, clock.t, Math.floor(Math.random() * 1e9));
-  const game = new Game(cfg, state, {
-    now: () => clock.t,
-    save: (json) => {
-      store.set('save', json);
-      online?.cloud.markDirty();
-    },
-    onOrderGranted: (id) => online?.onOrderGranted(id),
-  });
-  online = new OnlineServices(game, {
-    apiBase: srv.url,
-    transport: fetchTransport,
-    store,
-    deviceId: () => deviceId,
-    confirmDevPay: async () => opts.confirmPay ?? true,
-  });
-  return { game, online, store };
-}
 
 const meta = (m: Partial<SaveMeta>): SaveMeta => ({ serverVersion: 1, dirty: false, userId: 1, ...m });
 
