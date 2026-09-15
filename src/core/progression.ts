@@ -11,7 +11,7 @@ export interface Stats {
 
 export function characterStats(cfg: GameConfig, level: number): Stats {
   const c = cfg.progression.character;
-  const atk = c.atkBase * Math.pow(c.atkGrowth, level - 1);
+  const atk = c.atkBase * (1 + c.atkPerLevel * (level - 1));
   return { atk, hp: atk * c.hpPerAtk, def: c.def, speed: c.speed };
 }
 
@@ -37,7 +37,7 @@ export function playerPower(cfg: GameConfig, level: number, chain: Chain): numbe
 
 export function levelUpCost(cfg: GameConfig, level: number): number {
   const c = cfg.progression.character;
-  return Math.round(c.costBase * Math.pow(c.costGrowth, level - 1));
+  return Math.round(c.costBase * Math.pow(level, c.costExp));
 }
 
 export function furnaceDef(cfg: GameConfig, level: number): FurnaceLevelDef | null {

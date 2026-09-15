@@ -1,13 +1,13 @@
 {
   "character": {
     "atkBase": 50,
-    "atkGrowth": 1.045,
+    "atkPerLevel": 0.25,
     "hpPerAtk": 10,
     "def": 0,
     "speed": 100,
-    "costBase": 100,
-    "costGrowth": 1.085,
-    "maxLevel": 200
+    "costBase": 180,
+    "costExp": 0.67,
+    "maxLevel": 300
   },
   "furnace": [
     { "level": 1, "xp": 0, "chapter": 0, "gold": 0 },
@@ -25,7 +25,7 @@
   "nodeUnlocks": [
     { "nodes": 2, "at": "start" },
     { "nodes": 5, "at": "tutorial:afterBattle2" },
-    { "nodes": 6, "at": "stage:6" }
+    { "nodes": 6, "at": "stage:4" }
   ],
   "featureUnlocks": {
     "tenPull": "tutorial:done",

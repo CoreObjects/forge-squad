@@ -14,6 +14,40 @@ describe('新手流程（3 分钟：锻造→排序→连携→破绽→结果�
     expect(game.state.milestones.comboSeen).toBe(true);
   });
 
+  it('60 个种子：新手完成后不依赖挂机也能打到挂机解锁（无死锁）', () => {
+    const stuck: number[] = [];
+    for (let seed = 100; seed < 160; seed++) {
+      const { game } = newGame({ seed });
+      const log = playTutorial(game);
+      if (game.state.tutorial.step !== 'done') {
+        stuck.push(seed);
+        continue;
+      }
+      expect(log.bossRetryWin ?? true).toBe(true);
+      for (let guard = 0; guard < 40 && !game.isUnlocked('idle'); guard++) {
+        while (game.state.hammers > 0) {
+          game.forge(1);
+          while (game.currentPending()) game.decidePending({ kind: 'recommend' });
+        }
+        const b = game.challengeStage();
+        if (b && !b.result.win && game.state.hammers === 0) {
+          // 玩家会尝试调整顺序：逐个交换找能赢的排列
+          let won = false;
+          for (let i = 0; i < game.state.unlockedNodes && !won; i++) {
+            for (let j = i + 1; j < game.state.unlockedNodes && !won; j++) {
+              game.swap(i, j);
+              won = !!game.challengeStage()?.result.win;
+              if (!won) game.swap(i, j);
+            }
+          }
+          if (!won) break;
+        }
+      }
+      if (!game.isUnlocked('idle')) stuck.push(seed);
+    }
+    expect(stuck).toEqual([]);
+  });
+
   it('前两枚战纹被放成「疾 → 锋」', () => {
     const { game } = newGame();
     game.startSession(true);

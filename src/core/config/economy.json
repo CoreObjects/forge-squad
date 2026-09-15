@@ -3,7 +3,7 @@
     "hammerIntervalMinutes": 40,
     "freeCapHours": 12,
     "goldPerHourBase": 120,
-    "goldPerHourPerStage": 10
+    "goldPerHourPerStage": 5
   },
   "daily": {
     "resetHour": 0,

@@ -70,12 +70,14 @@ export interface FurnaceLevelDef {
 export interface ProgressionConfig {
   character: {
     atkBase: number;
-    atkGrowth: number;
+    /** 每级攻击提升（相对 1 级攻击的比例，线性） */
+    atkPerLevel: number;
     hpPerAtk: number;
     def: number;
     speed: number;
+    /** 升级花费 = costBase × 当前等级^costExp */
     costBase: number;
-    costGrowth: number;
+    costExp: number;
     maxLevel: number;
   };
   furnace: FurnaceLevelDef[];

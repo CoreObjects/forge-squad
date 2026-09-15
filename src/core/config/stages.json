@@ -26,13 +26,13 @@
     [50, 1130], [60, 1270], [70, 1400], [80, 1520], [90, 1640], [100, 1850]
   ],
   "normalFactor": { "start": 0.85, "end": 0.98 },
-  "bossFactor": [1.12, 1.15, 1.18, 1.15, 1.15, 1.18, 1.15, 1.18, 1.15, 1.2],
-  "normalStats": { "hpPerPower": 4.0, "atkPerPower": 0.5, "actEvery": 2, "speed": 90 },
-  "bossStats": { "hpPerPower": 7.5, "atkPerPower": 0.75, "actEvery": 2, "speed": 90 },
+  "bossFactor": [1.12, 1.12, 1.08, 1.12, 1.08, 1.12, 1.08, 1.12, 1.1, 1.15],
+  "normalStats": { "hpPerPower": 9.4, "atkPerPower": 1.18, "actEvery": 2, "speed": 90 },
+  "bossStats": { "hpPerPower": 12.4, "atkPerPower": 1.1, "actEvery": 2, "speed": 90 },
   "rewards": {
-    "goldBase": 60,
-    "goldPerStage": 12,
-    "earlyStageCount": 12,
+    "goldBase": 20,
+    "goldPerStage": 4,
+    "earlyStageCount": 8,
     "earlyHammers": 2,
     "evenStageHammers": 1,
     "bossHammers": 3

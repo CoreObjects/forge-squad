@@ -29,7 +29,7 @@ import { forgeRune, meltValue, newPityState, type PityHit, type PityState } from
 import type { PaymentProvider, ProductInfo } from './shop';
 import { enemyFromPower, medianPowerAt, stageEnemy, stageInfo, totalStages, type StageInfo } from './stages';
 import { DAY, dayIndex, dayKey, HOUR, MINUTE } from './time';
-import { calibrateTutorialBoss, type TutorialStep } from './tutorial';
+import { calibrateTutorialBoss, winThreshold, type TutorialStep } from './tutorial';
 import { CHAIN_SIZE, type Chain, type ChainFighter, type EnemyDef, type Rune, type RuneType } from './types';
 
 export const SAVE_VERSION = 1;
@@ -101,6 +101,8 @@ export interface GameState {
     bossWeakness: RuneType[] | null;
     bossPower: number | null;
     skipSwap: boolean;
+    /** 教程前两场普通战斗按玩家当前链校准后的敌人战力 */
+    stagePower: Record<string, number>;
   };
   milestones: {
     placed: boolean;
@@ -213,7 +215,7 @@ export class Game {
       daily: { dayKey: dayKey(now, cfg.economy.daily.resetHour), progress: {}, claimed: {}, dailyBossWon: false, arenaAttemptsUsed: 0, monthlyClaimed: false },
       arena: { unlocked: false, score: cfg.economy.arena.startScore, bots: [], botsDay: 0, opponents: [], snapshot: null, wins: 0, losses: 0 },
       shop: { firstChargeBought: false, cosmeticOwned: false, monthlyStart: 0, monthlyEnd: 0, grantedOrders: [] },
-      tutorial: { step: 'forge1', flags: [], bossWeakness: null, bossPower: null, skipSwap: false },
+      tutorial: { step: 'forge1', flags: [], bossWeakness: null, bossPower: null, skipSwap: false, stagePower: {} },
       milestones: { placed: false, melted: false, comboSeen: false, breakSeen: false, failed: false, firstChargeShown: false },
       stuck: null,
       counters: {
@@ -286,6 +288,8 @@ export class Game {
     this.ensureDaily();
     this.refreshUnlocks();
     if (this.state.tutorial.step === 'boss' && this.state.tutorial.bossPower === null) this.setupTutorialBoss();
+    const st = this.state.tutorial.step;
+    if ((st === 'battle1' || st === 'battle2') && this.state.tutorial.stagePower?.[String(this.state.stage.next)] === undefined) this.setupTutorialStage();
     this.commit();
   }
 
@@ -337,6 +341,8 @@ export class Game {
       if (this.state.tutorial.bossWeakness) info.weakness = this.state.tutorial.bossWeakness;
       if (this.state.tutorial.bossPower !== null) info.requiredPower = this.state.tutorial.bossPower;
     }
+    const easy = this.state.tutorial.step !== 'done' ? this.state.tutorial.stagePower?.[String(idx)] : undefined;
+    if (easy !== undefined && info.kind === 'normal') info.requiredPower = easy;
     if (this.state.gm.forcedWeakness && info.kind !== 'normal') info.weakness = this.state.gm.forcedWeakness;
     return info;
   }
@@ -625,6 +631,7 @@ export class Game {
     this.analytics.track('tutorial_step', { step });
     if (step === 'forge3' && !t.flags.includes('afterBattle2')) t.flags.push('afterBattle2');
     if (step === 'boss') this.setupTutorialBoss();
+    if (step === 'battle1' || step === 'battle2') this.setupTutorialStage();
     if (step === 'done') {
       this.state.hammers += this.cfg.progression.tutorialRewards.doneHammers;
       this.analytics.track('tutorial_complete', { forges: this.state.counters.forges });
@@ -648,6 +655,17 @@ export class Game {
     this.state.tutorial.bossWeakness = setup.weakness;
     this.state.tutorial.bossPower = setup.power;
     this.state.tutorial.skipSwap = setup.skipSwap;
+  }
+
+  /** 教程普通战斗：敌人战力取“当前链刚好能赢”的 55%，保证新手必胜。 */
+  private setupTutorialStage(): void {
+    const t = this.state.tutorial;
+    if (!t.stagePower) t.stagePower = {};
+    const idx = this.state.stage.next;
+    const info = stageInfo(this.cfg, idx);
+    if (info.kind !== 'normal') return;
+    const thr = winThreshold(this.cfg, this.fighter(), null, info.name, this.tutorialSeed(), false);
+    t.stagePower[String(idx)] = Math.max(5, Math.min(info.requiredPower, thr * 0.55));
   }
 
   private tutorialSeed(): number {
@@ -682,7 +700,7 @@ export class Game {
     const enemy = stageEnemy(this.cfg, info);
     const key = String(info.index);
     s.stage.attempts[key] = (s.stage.attempts[key] ?? 0) + 1;
-    const seed = info.kind === 'tutorialBoss' && step !== 'done' ? this.tutorialSeed() : hashSeed(s.seed, 'stage', info.index, s.stage.attempts[key]);
+    const seed = step !== 'done' ? this.tutorialSeed() : hashSeed(s.seed, 'stage', info.index, s.stage.attempts[key]);
     const chain = s.chain.slice();
     const fighter = this.fighter(chain);
     const result = simulatePve(this.cfg, fighter, enemy, seed);

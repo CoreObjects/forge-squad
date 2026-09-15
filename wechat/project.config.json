@@ -1,0 +1,13 @@
+{
+  "description": "锻造小队 微信小游戏工程（appid 为占位值，接入时替换为自己的小游戏 AppID）",
+  "compileType": "game",
+  "appid": "touristappid",
+  "projectname": "forge-squad",
+  "libVersion": "3.0.0",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "minified": true,
+    "urlCheck": true
+  }
+}

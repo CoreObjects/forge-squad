@@ -42,8 +42,9 @@ export function winThreshold(
   weakness: RuneType[] | null,
   name: string,
   seed: number,
+  boss = true,
 ): number {
-  const wins = (p: number) => simulatePve(cfg, fighter, enemyFromPower(cfg, p, true, name, weakness), seed).win;
+  const wins = (p: number) => simulatePve(cfg, fighter, enemyFromPower(cfg, p, boss, name, weakness), seed).win;
   let lo = 5;
   let hi = 5;
   if (!wins(lo)) return 0;
