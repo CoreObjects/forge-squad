@@ -9,3 +9,4 @@ coverage/
 server/data/
 .env
 server/dist/
+*.zip
